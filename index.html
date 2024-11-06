@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tfs drawer</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      font-family: Arial, sans-serif;
+    }
+    canvas {
+      border: 1px solid #000;
+      margin-top: 10px;
+      touch-action: none; /* For mobile drawing */
+    }
+    #controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      max-width: 600px;
+    }
+    #controls > * {
+      margin: 5px;
+    }
+  button {
+            background-color: #005FB9; /* Dark gray button */
+            color: #ffffff; /* White text color */
+            padding: 8px 16px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-right: 5px;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: #4F4F4F; /* Darker gray on hover */
+        }
+  </style>
+</head>
+<body>
+
+  <div id="controls">
+    <label>Stroke Size: <input type="number" id="strokeSize" min="1" max="20" value="5"></label>
+    <label>Stroke Color: <input type="color" id="strokeColor" value="#000000"></label>
+    <label>Canvas Background: <input type="color" id="canvasBgColor" value="#ffffff"></label>
+    <button onclick="insertShape('rect')">Insert Rectangle</button>
+    <button onclick="insertShape('circle')">Insert Circle</button>
+    <input type="text" id="insertText" placeholder="Insert Text">
+    <button onclick="insertText()">Add Text</button>
+    <button onclick="saveDrawing()">Save</button>
+    <button onclick="loadDrawing()">Load</button>
+    <button onclick="exportImage()">Export as Image</button>
+  </div>
+
+  <canvas id="drawingCanvas" width="600" height="400"></canvas>
+
+  <script>
+    const canvas = document.getElementById("drawingCanvas");
+    const ctx = canvas.getContext("2d");
+    let drawing = false;
+    let startX, startY;
+
+    // Initialize canvas background color
+    function setCanvasBackground(color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    setCanvasBackground(document.getElementById("canvasBgColor").value);
+
+    // Set drawing color and stroke size
+    document.getElementById("strokeColor").addEventListener("input", (e) => {
+      ctx.strokeStyle = e.target.value;
+    });
+    document.getElementById("strokeSize").addEventListener("input", (e) => {
+      ctx.lineWidth = e.target.value;
+    });
+    document.getElementById("canvasBgColor").addEventListener("input", (e) => {
+      setCanvasBackground(e.target.value);
+    });
+
+    // Drawing on canvas
+    canvas.addEventListener("mousedown", (e) => {
+      drawing = true;
+      [startX, startY] = [e.offsetX, e.offsetY];
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+    });
+    canvas.addEventListener("mousemove", (e) => {
+      if (!drawing) return;
+      ctx.lineTo(e.offsetX, e.offsetY);
+      ctx.stroke();
+    });
+    canvas.addEventListener("mouseup", () => (drawing = false));
+
+    // Touch support for mobile
+    canvas.addEventListener("touchstart", (e) => {
+      drawing = true;
+      const touch = e.touches[0];
+      [startX, startY] = [touch.clientX - canvas.offsetLeft, touch.clientY - canvas.offsetTop];
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+    });
+    canvas.addEventListener("touchmove", (e) => {
+      if (!drawing) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      ctx.lineTo(touch.clientX - canvas.offsetLeft, touch.clientY - canvas.offsetTop);
+      ctx.stroke();
+    });
+    canvas.addEventListener("touchend", () => (drawing = false));
+
+    // Insert Shape
+    function insertShape(type) {
+      ctx.beginPath();
+      ctx.fillStyle = document.getElementById("strokeColor").value;
+      if (type === "rect") {
+        ctx.fillRect(50, 50, 100, 50);
+      } else if (type === "circle") {
+        ctx.arc(150, 150, 50, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Insert Text with Formatting
+    function insertText() {
+      const text = document.getElementById("insertText").value;
+      if (!text) return;
+      ctx.font = "20px Arial";
+      ctx.fillStyle = document.getElementById("strokeColor").value;
+      ctx.fillText(text, 200, 200);
+    }
+
+    // Save drawing to local storage
+    function saveDrawing() {
+      const name = prompt("Enter a name for your drawing:");
+      if (name) {
+        localStorage.setItem(name, canvas.toDataURL());
+        alert("Drawing saved!");
+      }
+    }
+
+    // Load drawing from local storage
+    function loadDrawing() {
+      const name = prompt("Enter the name of the drawing to load:");
+      const dataURL = localStorage.getItem(name);
+      if (dataURL) {
+        const img = new Image();
+        img.onload = () => ctx.drawImage(img, 0, 0);
+        img.src = dataURL;
+      } else {
+        alert("No drawing found with that name.");
+      }
+    }
+
+    // Export canvas as an image
+    function exportImage() {
+      const link = document.createElement("a");
+      link.download = "drawing.png";
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+  </script>
+</body>
+</html>
